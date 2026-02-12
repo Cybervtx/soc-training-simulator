@@ -164,8 +164,8 @@ CREATE TABLE IF NOT EXISTS user_activity_log (
     action VARCHAR(100) NOT NULL,
     resource_type VARCHAR(50),
     resource_id JSONB,
-    UUID,
-    details ip_address VARCHAR(45),
+    details JSONB,
+    ip_address VARCHAR(45),
     user_agent TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
@@ -239,7 +239,7 @@ SELECT
     DATE_TRUNC('hour', created_at) as hour,
     COUNT(*) as request_count,
     AVG(response_time_ms) as avg_response_time_ms,
-    COUNTASE WHEN response_status(C >= 400 THEN 1 END) as error_count
+    COUNT(CASE WHEN response_status >= 400 THEN 1 END) as error_count
 FROM abuseipdb_api_log
 WHERE created_at > NOW() - INTERVAL '24 hours'
 GROUP BY endpoint, DATE_TRUNC('hour', created_at)

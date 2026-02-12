@@ -12,7 +12,7 @@ from backend.services.investigation_tools_service import InvestigationToolsServi
 
 
 # Create blueprint
-investigation_bp = Blueprint('investigation', __url_prefix='/api/tools')
+investigation_bp = Blueprint('investigation', __name__, url_prefix='/api/tools')
 
 # Service instance
 investigation_service = InvestigationToolsService()

@@ -8,6 +8,21 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def get_database_uri():
+    """Get database URI for SQLAlchemy"""
+    database_url = os.environ.get('DATABASE_URL', '')
+    if database_url:
+        return database_url
+    
+    db_host = os.environ.get('DB_HOST', 'localhost')
+    db_port = int(os.environ.get('DB_PORT', 5432))
+    db_name = os.environ.get('DB_NAME', 'soc_training')
+    db_user = os.environ.get('DB_USER', 'postgres')
+    db_password = os.environ.get('DB_PASSWORD', '')
+    
+    return f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+
+
 class Config:
     """Base configuration class"""
     
@@ -25,13 +40,6 @@ class Config:
     
     # Alternative DATABASE_URL format
     DATABASE_URL = os.environ.get('DATABASE_URL', '')
-    
-    @classmethod
-    def get_database_uri(cls):
-        """Get database URI for SQLAlchemy"""
-        if cls.DATABASE_URL:
-            return cls.DATABASE_URL
-        return f"postgresql://{cls.DB_USER}:{cls.DB_PASSWORD}@{cls.DB_HOST}:{cls.DB_PORT}/{cls.DB_NAME}"
     
     # SQLAlchemy settings
     SQLALCHEMY_DATABASE_URI = get_database_uri()

@@ -188,8 +188,8 @@ class TestAuthEndpoints:
     def test_get_profile_with_token(self, client, test_user):
         """Test getting profile with valid token"""
         # First login to get token
-        login_response = client.post('/            data=jsonapi/auth/login',
-.dumps({
+        login_response = client.post('/api/auth/login',
+            data=json.dumps({
                 'email': 'test@example.com',
                 'password': 'TestPassword123'
             }),

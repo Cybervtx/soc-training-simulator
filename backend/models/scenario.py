@@ -143,13 +143,13 @@ class ScenarioTemplate:
 @dataclass
 class EnrichedDataCache:
     """Cache for enriched data (WHOIS, geolocation, pDNS, etc.)"""
-    id: Optional[int] = None
     query_type: str  # whois, geolocation, pdns, reverse_dns, shodan, etc
     query_value: str = ""
     result_data: Dict[str, Any] = field(default_factory=dict)
     cached_at: datetime = field(default_factory=datetime.utcnow)
     expires_at: Optional[datetime] = None
     source: Optional[str] = None
+    id: Optional[int] = None
     
     def to_dict(self) -> Dict[str, Any]:
         return {
