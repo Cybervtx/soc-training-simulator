@@ -303,3 +303,248 @@ VALUES
     ('5.6.7.8', 25, ARRAY[21], 'US', 'United States', 'example.us', NOW(), NOW(), NOW() + INTERVAL '24 hours', FALSE, 25, 5),
     ('9.10.11.12', 0, NULL, 'BR', 'Brazil', NULL, NOW(), NOW(), NOW() + INTERVAL '24 hours', TRUE, 0, 0)
 ON CONFLICT (ip) DO NOTHING;
+
+-- =====================================================
+-- SCENARIO ARTIFACTS TABLE (Parte 2)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS scenario_artifacts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    scenario_id UUID NOT NULL REFERENCES scenarios(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL CHECK (type IN ('ip', 'domain', 'url', 'file_hash', 'email', 'registry_key', 'mutex')),
+    value VARCHAR(500) NOT NULL,
+    is_malicious BOOLEAN DEFAULT FALSE,
+    is_critical BOOLEAN DEFAULT FALSE,
+    metadata JSONB DEFAULT '{}',
+    points INT DEFAULT 10,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_scenario_artifacts_scenario ON scenario_artifacts(scenario_id);
+CREATE INDEX IF NOT EXISTS idx_scenario_artifacts_type ON scenario_artifacts(type);
+CREATE INDEX IF NOT EXISTS idx_scenario_artifacts_value ON scenario_artifacts(value);
+
+-- =====================================================
+-- SCENARIO TIMELINE TABLE (Parte 2)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS scenario_timeline (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    scenario_id UUID NOT NULL REFERENCES scenarios(id) ON DELETE CASCADE,
+    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+    event_type VARCHAR(100) NOT NULL CHECK (event_type IN ('connection_attempt', 'authentication_failure', 'authentication_success', 'data_exfiltration', 'malware_detection', 'network_scan', 'c2_beacon', 'phishing_email', 'privilege_escalation', 'persistence', 'lateral_movement', 'command_execution', 'file_download', 'registry_modification', 'service_installation', 'other')),
+    description TEXT,
+    source_ip VARCHAR(45),
+    destination_ip VARCHAR(45),
+    source_port INT,
+    destination_port INT,
+    artifact_ids JSONB DEFAULT '[]',
+    priority INT DEFAULT 1 CHECK (priority IN (1, 2, 3)),
+    raw_log TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_scenario_timeline_scenario ON scenario_timeline(scenario_id);
+CREATE INDEX IF NOT EXISTS idx_scenario_timeline_timestamp ON scenario_timeline(scenario_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_scenario_timeline_event_type ON scenario_timeline(event_type);
+
+-- =====================================================
+-- SCENARIO TEMPLATES TABLE (Parte 2)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS scenario_templates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    incident_type VARCHAR(50) NOT NULL CHECK (incident_type IN ('port_scanning', 'brute_force', 'c2_communication', 'malware_distribution', 'phishing_campaign', 'data_exfiltration', 'apt_activity')),
+    description TEXT,
+    base_timeline JSONB NOT NULL,
+    base_artifacts JSONB DEFAULT '[]',
+    default_difficulty VARCHAR(20) DEFAULT 'beginner' CHECK (default_difficulty IN ('beginner', 'intermediate', 'advanced')),
+    estimated_duration INT,
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE INDEX IF NOT EXISTS idx_scenario_templates_type ON scenario_templates(incident_type);
+CREATE INDEX IF NOT EXISTS idx_scenario_templates_active ON scenario_templates(is_active);
+
+-- =====================================================
+-- ENRICHED DATA CACHE TABLE (Parte 2)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS enriched_data_cache (
+    id SERIAL PRIMARY KEY,
+    query_type VARCHAR(50) NOT NULL CHECK (query_type IN ('whois', 'geolocation', 'pdns', 'reverse_dns', 'shodan', 'virus_total', 'abuseipdb_extended')),
+    query_value VARCHAR(500) NOT NULL,
+    result_data JSONB NOT NULL,
+    cached_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    source VARCHAR(100),
+    UNIQUE(query_type, query_value)
+);
+
+CREATE INDEX IF NOT EXISTS idx_enriched_data_cache_query ON enriched_data_cache(query_type, query_value);
+CREATE INDEX IF NOT EXISTS idx_enriched_data_cache_expires ON enriched_data_cache(expires_at);
+
+-- =====================================================
+-- INVESTIGATION NOTES TABLE (Parte 2)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS investigation_notes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    scenario_id UUID NOT NULL REFERENCES scenarios(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id),
+    artifact_id UUID REFERENCES scenario_artifacts(id),
+    content TEXT NOT NULL,
+    tags TEXT[],
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_investigation_notes_scenario ON investigation_notes(scenario_id);
+CREATE INDEX IF NOT EXISTS idx_investigation_notes_user ON investigation_notes(user_id);
+CREATE INDEX IF NOT EXISTS idx_investigation_notes_artifact ON investigation_notes(artifact_id);
+
+-- =====================================================
+-- USER INVESTIGATION PROGRESS TABLE (Parte 2)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS user_investigation_progress (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    scenario_id UUID NOT NULL REFERENCES scenarios(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id),
+    status VARCHAR(20) DEFAULT 'in_progress' NOT NULL CHECK (status IN ('not_started', 'in_progress', 'completed', 'submitted')),
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    time_spent_seconds INT DEFAULT 0,
+    artifacts_reviewed INT DEFAULT 0,
+    conclusions TEXT,
+    recommendations TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    UNIQUE(scenario_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_investigation_scenario ON user_investigation_progress(scenario_id);
+CREATE INDEX IF NOT EXISTS idx_user_investigation_user ON user_investigation_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_investigation_status ON user_investigation_progress(status);
+
+-- =====================================================
+-- ADDITIONAL TRIGGERS FOR PARTE 2
+-- =====================================================
+
+CREATE TRIGGER update_scenario_artifacts_updated_at
+    BEFORE UPDATE ON scenario_artifacts
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_scenario_timeline_updated_at
+    BEFORE UPDATE ON scenario_timeline
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_scenario_templates_updated_at
+    BEFORE UPDATE ON scenario_templates
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_investigation_notes_updated_at
+    BEFORE UPDATE ON investigation_notes
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_user_investigation_updated_at
+    BEFORE UPDATE ON user_investigation_progress
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
+-- SAMPLE SCENARIO TEMPLATES (Parte 2)
+-- =====================================================
+
+INSERT INTO scenario_templates (name, incident_type, description, base_timeline, base_artifacts, default_difficulty, estimated_duration)
+VALUES 
+    (
+        'Port Scanning Detection',
+        'port_scanning',
+        'Detected reconnaissance activity via port scanning',
+        '[
+            {"timestamp": "2025-02-11T10:00:00Z", "event_type": "network_scan", "description": "Initial SYN packet detected", "priority": 2},
+            {"timestamp": "2025-02-11T10:00:05Z", "event_type": "connection_attempt", "description": "Connection attempt to port 22", "priority": 2},
+            {"timestamp": "2025-02-11T10:00:10Z", "event_type": "connection_attempt", "description": "Connection attempt to port 80", "priority": 2},
+            {"timestamp": "2025-02-11T10:00:15Z", "event_type": "connection_attempt", "description": "Connection attempt to port 443", "priority": 2},
+            {"timestamp": "2025-02-11T10:00:20Z", "event_type": "network_scan", "description": "Rapid connection attempts detected", "priority": 3}
+        ]',
+        '[
+            {"type": "ip", "value": "185.220.101.42", "is_malicious": true, "is_critical": true, "points": 20},
+            {"type": "domain", "value": "scanner.badssl.com", "is_malicious": false, "is_critical": false, "points": 10}
+        ]',
+        'beginner',
+        30
+    ),
+    (
+        'SSH Brute Force Attack',
+        'brute_force',
+        'Brute force attack targeting SSH service',
+        '[
+            {"timestamp": "2025-02-11T10:25:00Z", "event_type": "connection_attempt", "description": "SSH connection from unknown IP", "priority": 2},
+            {"timestamp": "2025-02-11T10:25:01Z", "event_type": "authentication_failure", "description": "Failed password attempt for user root", "priority": 2},
+            {"timestamp": "2025-02-11T10:25:03Z", "event_type": "authentication_failure", "description": "Failed password attempt for user admin", "priority": 2},
+            {"timestamp": "2025-02-11T10:25:05Z", "event_type": "authentication_failure", "description": "Failed password attempt for user ubuntu", "priority": 2},
+            {"timestamp": "2025-02-11T10:25:07Z", "event_type": "authentication_failure", "description": "Failed password attempt for user administrator", "priority": 2},
+            {"timestamp": "2025-02-11T10:26:00Z", "event_type": "authentication_success", "description": "Successful SSH login for user root", "priority": 3}
+        ]',
+        '[
+            {"type": "ip", "value": "185.220.101.42", "is_malicious": true, "is_critical": true, "points": 25},
+            {"type": "domain", "value": "brute-force.badssl.com", "is_malicious": true, "is_critical": false, "points": 15}
+        ]',
+        'intermediate',
+        45
+    )
+ON CONFLICT DO NOTHING;
+
+-- =====================================================
+-- ENABLE RLS FOR NEW TABLES (Parte 2)
+-- =====================================================
+
+ALTER TABLE scenario_artifacts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scenario_timeline ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scenario_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE enriched_data_cache ENABLE ROW LEVEL SECURITY;
+ALTER TABLE investigation_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_investigation_progress ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for scenario tables
+CREATE POLICY "Users can view scenarios" ON scenarios
+    FOR SELECT USING (true);
+
+CREATE POLICY "Instructors can create scenarios" ON scenarios
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND EXISTS (
+        SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('instructor', 'admin')
+    ));
+
+CREATE POLICY "Scenario creators can update" ON scenarios
+    FOR UPDATE USING (auth.uid() = created_by OR EXISTS (
+        SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
+    ));
+
+CREATE POLICY "Authenticated users can view artifacts" ON scenario_artifacts
+    FOR SELECT USING (true);
+
+CREATE POLICY "Authenticated users can view timeline" ON scenario_timeline
+    FOR SELECT USING (true);
+
+CREATE POLICY "Instructors can manage templates" ON scenario_templates
+    FOR ALL USING (EXISTS (
+        SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('instructor', 'admin')
+    ));
+
+CREATE POLICY "Users can view enriched data cache" ON enriched_data_cache
+    FOR SELECT USING (true);
+
+CREATE POLICY "Users can manage own notes" ON investigation_notes
+    FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own investigation progress" ON user_investigation_progress
+    FOR ALL USING (auth.uid() = user_id);

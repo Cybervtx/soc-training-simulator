@@ -14,7 +14,7 @@ from flask import Flask, send_from_directory, jsonify
 from flask_cors import CORS
 from backend.config import get_config
 from backend.models import db
-from backend.routes import auth_bp, abuseipdb_bp, health_bp
+from backend.routes import auth_bp, abuseipdb_bp, health_bp, scenarios_bp, investigation_bp
 
 
 # Configure logging
@@ -52,6 +52,8 @@ def create_app(config=None):
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(abuseipdb_bp)
+    app.register_blueprint(scenarios_bp)
+    app.register_blueprint(investigation_bp)
     
     # Create database tables
     with app.app_context():

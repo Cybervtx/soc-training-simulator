@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workspace de Investigação - SOC Training Simulator</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/workspace.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="header-left">
+                <a href="/pages/dashboard.html" class="logo">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>SOC Training</span>
+                </a>
+            </div>
+            <div class="header-center">
+                <h1>{{ scenario?.title || 'Workspace de Investigação' }}</h1>
+                <span v-if="scenario" class="scenario-badge" :class="scenario.difficulty">
+                    {{ getDifficultyLabel(scenario.difficulty) }}
+                </span>
+            </div>
+            <div class="header-right">
+                <div class="timer" v-if="isInvestigationActive">
+                    <i class="fas fa-clock"></i>
+                    <span>{{ elapsedTime }}</span>
+                </div>
+                <button class="btn btn-secondary" @click="saveProgress">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+                <button class="btn btn-primary" @click="submitInvestigation">
+                    <i class="fas fa-paper-plane"></i> Submeter
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <nav class="nav-menu">
+                    <a href="#" 
+                       class="nav-item" 
+                       :class="{ active: activeTab === 'brief' }"
+                       @click.prevent="activeTab = 'brief'">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Brief do Incidente</span>
+                    </a>
+                    <a href="#" 
+                       class="nav-item" 
+                       :class="{ active: activeTab === 'timeline' }"
+                       @click.prevent="activeTab = 'timeline'">
+                        <i class="fas fa-stream"></i>
+                        <span>Timeline</span>
+                        <span class="badge">{{ timeline.length }}</span>
+                    </a>
+                    <a href="#" 
+                       class="nav-item" 
+                       :class="{ active: activeTab === 'artifacts' }"
+                       @click.prevent="activeTab = 'artifacts'">
+                        <i class="fas fa-fingerprint"></i>
+                        <span>Artefatos</span>
+                        <span class="badge">{{ artifacts.length }}</span>
+                    </a>
+                    <a href="#" 
+                       class="nav-item" 
+                       :class="{ active: activeTab === 'tools' }"
+                       @click.prevent="activeTab = 'tools'">
+                        <i class="fas fa-tools"></i>
+                        <span>Ferramentas</span>
+                    </a>
+                    <a href="#" 
+                       class="nav-item" 
+                       :class="{ active: activeTab === 'notes' }"
+                       @click.prevent="activeTab = 'notes'">
+                        <i class="fas fa-sticky-note"></i>
+                        <span>Notas</span>
+                    </a>
+                </nav>
+
+                <!-- Learning Objectives -->
+                <div class="sidebar-section" v-if="scenario?.learning_objectives?.length">
+                    <h3><i class="fas fa-graduation-cap"></i> Objetivos de Aprendizado</h3>
+                    <ul class="learning-objectives">
+                        <li v-for="(obj, index) in scenario.learning_objectives" :key="index">
+                            {{ obj }}
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <main class="content-area">
+                <!-- Loading State -->
+                <div v-if="loading" class="loading-container">
+                    <div class="spinner"></div>
+                    <p>Carregando workspace de investigação...</p>
+                </div>
+
+                <!-- Error State -->
+                <div v-else-if="error" class="error-container">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h2>Erro ao carregar cenário</h2>
+                    <p>{{ error }}</p>
+                    <button class="btn btn-primary" @click="loadScenario">
+                        <i class="fas fa-redo"></i> Tentar novamente
+                    </button>
+                </div>
+
+                <!-- Brief Panel -->
+                <div v-else-if="activeTab === 'brief'" class="panel brief-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-file-alt"></i> Brief do Incidente</h2>
+                    </div>
+                    <div class="panel-content">
+                        <div class="incident-summary">
+                            <div class="summary-card">
+                                <h3>Tipo de Incidente</h3>
+                                <span class="incident-type" :class="scenario?.incident_type">
+                                    {{ getIncidentTypeLabel(scenario?.incident_type) }}
+                                </span>
+                            </div>
+                            <div class="summary-card">
+                                <h3>Dificuldade</h3>
+                                <span class="difficulty-level" :class="scenario?.difficulty">
+                                    {{ getDifficultyLabel(scenario?.difficulty) }}
+                                </span>
+                            </div>
+                            <div class="summary-card">
+                                <h3>Duração Estimada</h3>
+                                <span>{{ scenario?.estimated_duration || 30 }} minutos</span>
+                            </div>
+                        </div>
+
+                        <div class="incident-description">
+                            <h3>Descrição</h3>
+                            <p>{{ scenario?.description }}</p>
+                        </div>
+
+                        <div class="investigation-goals">
+                            <h3><i class="fas fa-bullseye"></i> Objetivos da Investigação</h3>
+                            <ul>
+                                <li>Analisar os artefatos e eventos fornecidos</li>
+                                <li>Identificar indicadores de comprometimento (IoCs)</li>
+                                <li>Determinar a extensão do incidente</li>
+                                <li>Fornecer recomendações de mitigação</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Panel -->
+                <div v-else-if="activeTab === 'timeline'" class="panel timeline-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-stream"></i> Timeline de Eventos</h2>
+                        <div class="panel-actions">
+                            <select v-model="timelineFilter" class="filter-select">
+                                <option value="all">Todos os eventos</option>
+                                <option value="high">Alta prioridade</option>
+                                <option value="medium">Média prioridade</option>
+                                <option value="low">Baixa prioridade</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="timeline-container">
+                            <div v-for="(events, date) in groupedTimeline" :key="date" class="timeline-day">
+                                <div class="timeline-date">
+                                    {{ formatDate(date) }}
+                                </div>
+                                <div class="timeline-events">
+                                    <div v-for="event in filteredEvents(events)" 
+                                         :key="event.id" 
+                                         class="timeline-event"
+                                         :class="['priority-' + event.priority, 'event-' + event.event_type]"
+                                         @click="selectEvent(event)">
+                                        <div class="event-time">
+                                            {{ formatTime(event.timestamp) }}
+                                        </div>
+                                        <div class="event-icon">
+                                            <i :class="getEventIcon(event.event_type)"></i>
+                                        </div>
+                                        <div class="event-content">
+                                            <div class="event-type-badge">
+                                                {{ getEventTypeLabel(event.event_type) }}
+                                            </div>
+                                            <p class="event-description">{{ event.description }}</p>
+                                            <div class="event-meta" v-if="event.source_ip || event.destination_ip">
+                                                <span v-if="event.source_ip">
+                                                    <i class="fas fa-arrow-right"></i> {{ event.source_ip }}
+                                                </span>
+                                                <span v-if="event.destination_ip">
+                                                    <i class="fas fa-arrow-left"></i> {{ event.destination_ip }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Artifacts Panel -->
+                <div v-else-if="activeTab === 'artifacts'" class="panel artifacts-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-fingerprint"></i> Artefatos da Investigação</h2>
+                        <div class="panel-actions">
+                            <select v-model="artifactFilter" class="filter-select">
+                                <option value="all">Todos os artefatos</option>
+                                <option value="malicious">Maliciosos</option>
+                                <option value="benign">Benignos</option>
+                                <option value="critical">Críticos</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="artifacts-grid">
+                            <div v-for="artifact in filteredArtifacts" 
+                                 :key="artifact.id" 
+                                 class="artifact-card"
+                                 :class="{ 
+                                     'is-malicious': artifact.is_malicious,
+                                     'is-critical': artifact.is_critical,
+                                     'selected': selectedArtifact?.id === artifact.id
+                                 }"
+                                 @click="selectArtifact(artifact)">
+                                <div class="artifact-header">
+                                    <span class="artifact-type" :class="artifact.type">
+                                        <i :class="getArtifactIcon(artifact.type)"></i>
+                                        {{ artifact.type.toUpperCase() }}
+                                    </span>
+                                    <span class="artifact-points" v-if="artifact.points">
+                                        <i class="fas fa-star"></i> {{ artifact.points }} pts
+                                    </span>
+                                </div>
+                                <div class="artifact-value">
+                                    <code>{{ artifact.value }}</code>
+                                </div>
+                                <div class="artifact-badges">
+                                    <span v-if="artifact.is_malicious" class="badge badge-danger">
+                                        <i class="fas fa-exclamation-triangle"></i> Malicioso
+                                    </span>
+                                    <span v-if="artifact.is_critical" class="badge badge-warning">
+                                        <i class="fas fa-exclamation-circle"></i> Crítico
+                                    </span>
+                                </div>
+                                <div class="artifact-status" v-if="artifact.status">
+                                    <span class="status-badge" :class="artifact.status">
+                                        {{ getStatusLabel(artifact.status) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tools Panel -->
+                <div v-else-if="activeTab === 'tools'" class="panel tools-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-tools"></i> Ferramentas de Investigação</h2>
+                    </div>
+                    <div class="panel-content">
+                        <div class="tools-container">
+                            <div class="tool-card">
+                                <h3><i class="fas fa-globe"></i> Geolocalização IP</h3>
+                                <div class="tool-input">
+                                    <input type="text" 
+                                           v-model="toolQueries.geoip" 
+                                           placeholder="Digite o IP (ex: 185.220.101.42)"
+                                           @keyup.enter="lookupGeoIP">
+                                    <button class="btn btn-primary" @click="lookupGeoIP">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                                <div v-if="toolResults.geoip" class="tool-result">
+                                    <div class="result-item">
+                                        <strong>IP:</strong> {{ toolResults.geoip.ip }}
+                                    </div>
+                                    <div class="result-item">
+                                        <strong>País:</strong> {{ toolResults.geoip.country_name }} ({{ toolResults.geoip.country_code }})
+                                    </div>
+                                    <div class="result-item">
+                                        <strong>Cidade:</strong> {{ toolResults.geoip.city }}
+                                    </div>
+                                    <div class="result-item">
+                                        <strong>ISP:</strong> {{ toolResults.geoip.isp }}
+                                    </div>
+                                    <div class="result-item" v-if="toolResults.geoip.is_malicious">
+                                        <strong>Ameaça:</strong> 
+                                        <span class="threat-high">Alta - Score: {{ toolResults.geoip.abuse_confidence_score }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tool-card">
+                                <h3><i class="fas fa-search"></i> WHOIS Lookup</h3>
+                                <div class="tool-input">
+                                    <input type="text" 
+                                           v-model="toolQueries.whois" 
+                                           placeholder="Digite o domínio (ex: malware-c2.badssl.com)"
+                                           @keyup.enter="lookupWhois">
+                                    <button class="btn btn-primary" @click="lookupWhois">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                                <div v-if="toolResults.whois" class="tool-result">
+                                    <div class="result-item">
+                                        <strong>Domínio:</strong> {{ toolResults.whois.domain }}
+                                    </div>
+                                    <div class="result-item">
+                                        <strong>Registrador:</strong> {{ toolResults.whois.registrar }}
+                                    </div>
+                                    <div class="result-item">
+                                        <strong>Criado em:</strong> {{ toolResults.whois.created_date }}
+                                    </div>
+                                    <div class="result-item">
+                                        <strong>Expira em:</strong> {{ toolResults.whois.expires_date }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tool-card">
+                                <h3><i class="fas fa-network-wired"></i> DNS Passivo</h3>
+                                <div class="tool-input">
+                                    <input type="text" 
+                                           v-model="toolQueries.pdns" 
+                                           placeholder="Digite o domínio"
+                                           @keyup.enter="lookupPDNS">
+                                    <button class="btn btn-primary" @click="lookupPDNS">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                                <div v-if="toolResults.pdns" class="tool-result">
+                                    <div class="dns-records">
+                                        <div v-for="record in toolResults.pdns.records" 
+                                             :key="record.type + record.value"
+                                             class="dns-record">
+                                            <span class="dns-type">{{ record.type }}</span>
+                                            <span class="dns-value">{{ record.value }}</span>
+                                            <span class="dns-first-seen" v-if="record.first_seen">
+                                                {{ formatDate(record.first_seen) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tool-card">
+                                <h3><i class="fas fa-search-plus"></i> Shodan</h3>
+                                <div class="tool-input">
+                                    <input type="text" 
+                                           v-model="toolQueries.shodan" 
+                                           placeholder="Digite o IP"
+                                           @keyup.enter="lookupShodan">
+                                    <button class="btn btn-primary" @click="lookupShodan">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                                <div v-if="toolResults.shodan" class="tool-result">
+                                    <div class="result-item">
+                                        <strong>IP:</strong> {{ toolResults.shodan.ip }}
+                                    </div>
+                                    <div class="result-item">
+                                        <strong>Portas:</strong> {{ toolResults.shodan.ports?.join(', ') || 'N/A' }}
+                                    </div>
+                                    <div class="result-item">
+                                        <strong>Organização:</strong> {{ toolResults.shodan.org }}
+                                    </div>
+                                    <div v-if="toolResults.shodan.vulnerabilities?.length" class="result-item">
+                                        <strong>Vulnerabilidades:</strong>
+                                        <ul class="vuln-list">
+                                            <li v-for="vuln in toolResults.shodan.vulnerabilities" :key="vuln">
+                                                {{ vuln }}
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes Panel -->
+                <div v-else-if="activeTab === 'notes'" class="panel notes-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-sticky-note"></i> Notas da Investigação</h2>
+                        <button class="btn btn-primary" @click="addNote">
+                            <i class="fas fa-plus"></i> Nova Nota
+                        </button>
+                    </div>
+                    <div class="panel-content">
+                        <div class="notes-container">
+                            <div v-for="note in notes" :key="note.id" class="note-card">
+                                <div class="note-header">
+                                    <span class="note-date">{{ formatDate(note.created_at) }}</span>
+                                    <button class="btn-icon" @click="deleteNote(note.id)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="note-content">
+                                    <textarea 
+                                        v-model="note.content" 
+                                        @blur="updateNote(note)"
+                                        placeholder="Digite suas anotações..."
+                                        rows="3"></textarea>
+                                </div>
+                                <div class="note-tags" v-if="note.tags?.length">
+                                    <span v-for="tag in note.tags" :key="tag" class="tag">
+                                        {{ tag }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div v-if="notes.length === 0" class="empty-notes">
+                                <i class="fas fa-sticky-note"></i>
+                                <p>Nenhuma nota ainda. Clique em "Nova Nota" para adicionar.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Right Panel - Details -->
+            <aside class="details-panel" v-if="selectedArtifact || selectedEvent">
+                <div class="details-header">
+                    <h3>{{ selectedArtifact ? 'Detalhes do Artefato' : 'Detalhes do Evento' }}</h3>
+                    <button class="btn-icon" @click="closeDetails">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="details-content">
+                    <!-- Artifact Details -->
+                    <template v-if="selectedArtifact">
+                        <div class="detail-section">
+                            <h4>Valor</h4>
+                            <code class="artifact-value-large">{{ selectedArtifact.value }}</code>
+                        </div>
+                        <div class="detail-section">
+                            <h4>Tipo</h4>
+                            <span class="badge" :class="selectedArtifact.type">
+                                {{ selectedArtifact.type }}
+                            </span>
+                        </div>
+                        <div class="detail-section" v-if="selectedArtifact.is_malicious">
+                            <h4>Indicadores de Ameaça</h4>
+                            <div class="threat-indicator high">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Artefato marcado como malicioso
+                            </div>
+                        </div>
+                        <div class="detail-section">
+                            <h4>Ações</h4>
+                            <div class="action-buttons">
+                                <button class="btn btn-sm" 
+                                        :class="selectedArtifact.status === 'confirmed' ? 'btn-success' : 'btn-outline'"
+                                        @click="setArtifactStatus(selectedArtifact, 'confirmed')">
+                                    <i class="fas fa-check"></i> Confirmar
+                                </button>
+                                <button class="btn btn-sm" 
+                                        :class="selectedArtifact.status === 'false_positive' ? 'btn-success' : 'btn-outline'"
+                                        @click="setArtifactStatus(selectedArtifact, 'false_positive')">
+                                    <i class="fas fa-times"></i> Falso Positivo
+                                </button>
+                                <button class="btn btn-sm" 
+                                        :class="selectedArtifact.status === 'investigating' ? 'btn-warning' : 'btn-outline'"
+                                        @click="setArtifactStatus(selectedArtifact, 'investigating')">
+                                    <i class="fas fa-search"></i> Investigando
+                                </button>
+                            </div>
+                        </div>
+                        <div class="detail-section">
+                            <h4>Enriquecer</h4>
+                            <button class="btn btn-secondary btn-block" @click="enrichArtifact">
+                                <i class="fas fa-magic"></i> Obter Dados de Inteligência
+                            </button>
+                        </div>
+                    </template>
+
+                    <!-- Event Details -->
+                    <template v-if="selectedEvent">
+                        <div class="detail-section">
+                            <h4>Descrição</h4>
+                            <p>{{ selectedEvent.description }}</p>
+                        </div>
+                        <div class="detail-section">
+                            <h4>Tipo de Evento</h4>
+                            <span class="badge" :class="selectedEvent.event_type">
+                                {{ getEventTypeLabel(selectedEvent.event_type) }}
+                            </span>
+                        </div>
+                        <div class="detail-section">
+                            <h4>IP de Origem</h4>
+                            <code>{{ selectedEvent.source_ip || 'N/A' }}</code>
+                        </div>
+                        <div class="detail-section">
+                            <h4>IP de Destino</h4>
+                            <code>{{ selectedEvent.destination_ip || 'N/A' }}</code>
+                        </div>
+                        <div class="detail-section" v-if="selectedEvent.raw_log">
+                            <h4>Log Original</h4>
+                            <pre class="raw-log">{{ selectedEvent.raw_log }}</pre>
+                        </div>
+                    </template>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Submit Modal -->
+        <div class="modal" v-if="showSubmitModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Submeter Investigação</h2>
+                    <button class="btn-icon" @click="showSubmitModal = false">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Conclusões da Investigação</label>
+                        <textarea v-model="submission.conclusions" 
+                                  rows="5"
+                                  placeholder="Descreva suas conclusões sobre o incidente..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Recomendações de Mitigação</label>
+                        <textarea v-model="submission.recommendations" 
+                                  rows="5"
+                                  placeholder="Descreva as ações recomendadas para mitigar o incidente..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @click="showSubmitModal = false">
+                        Cancelar
+                    </button>
+                    <button class="btn btn-primary" @click="confirmSubmission">
+                        <i class="fas fa-paper-plane"></i> Submeter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/workspace.js"></script>
+</body>
+</html>

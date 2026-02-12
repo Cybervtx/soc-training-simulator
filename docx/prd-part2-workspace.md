@@ -351,13 +351,13 @@ components/
 
 ## 10. Critérios de Conclusão (Parte 2)
 
-- [ ] Gerador de cenários funcional
-- [ ] Workspace de investigação com timeline interativa
-- [ ] Sistema de evidências simuladas operacional
-- [ ] Ferramentas de enriquecimento implementadas
-- [ ] Interface de análise de artefatos
-- [ ] Backend API completo para Parte 2
-- [ ] Testes de integração workspace
+- [x] Gerador de cenários funcional
+- [x] Workspace de investigação com timeline interativa
+- [x] Sistema de evidências simuladas operacional
+- [x] Ferramentas de enriquecimento implementadas
+- [x] Interface de análise de artefatos
+- [x] Backend API completo para Parte 2
+- [x] Testes de integração workspace
 
 ## 11. Próximos Passos
 
