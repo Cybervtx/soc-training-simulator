@@ -2,7 +2,7 @@
 
 **Documento de Requisitos do Produto - Versão 1.0**  
 **Data:** 2026-02-11  
-**Status:** A revisar
+**Status:** ✅ Concluída (Parte 1)
 
 ## 1. Sumário executivo (Parte 1)
 
@@ -209,13 +209,17 @@ soc-training-simulator/
 
 ## 10. Critérios de Conclusão (Parte 1)
 
-- [ ] Backend Flask rodando e respondendo
-- [ ] Banco de dados Supabase configurado com tabelas
-- [ ] Sistema de autenticação funcionando
-- [ ] Integração AbuseIPDB operacional (fetch + cache)
-- [ ] Frontend básico com login e dashboard
-- [ ] Testes unitários para funcionalidades core
-- [ ] Documentação de setup para desenvolvedores
+- [x] Backend Flask rodando e respondendo
+- [x] Banco de dados Supabase configurado com tabelas
+- [x] Sistema de autenticação funcionando
+- [x] Integração AbuseIPDB operacional (fetch + cache)
+- [x] Frontend básico com login e dashboard
+- [x] Testes unitários para funcionalidades core
+- [x] Documentação de setup para desenvolvedores
+
+---
+
+**Status:** ✅ Parte 1 - TOTALMENTE CONCLUÍDA (7/7 critérios)
 
 ## 11. Próximos Passos
 
