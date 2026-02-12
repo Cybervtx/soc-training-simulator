@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SOC Training Simulator</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome via CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .login-bg {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+    </style>
+</head>
+<body class="login-bg min-h-screen flex items-center justify-center">
+    <div class="max-w-md w-full mx-4">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <i class="fas fa-shield-alt text-green-500 text-5xl mb-4"></i>
+            <h1 class="text-3xl font-bold text-white">SOC Training</h1>
+            <p class="text-gray-400 mt-2">Simulador de Centro de Operações de Segurança</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-gray-800 rounded-lg shadow-xl p-8 border border-gray-700">
+            <!-- Tabs -->
+            <div class="flex mb-6">
+                <button id="login-tab" class="flex-1 py-2 px-4 text-center border-b-2 border-green-500 text-green-500 font-medium focus:outline-none">
+                    Login
+                </button>
+                <button id="register-tab" class="flex-1 py-2 px-4 text-center border-b-2 border-transparent text-gray-400 hover:text-white focus:outline-none">
+                    Registrar
+                </button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-envelope mr-2"></i>Email
+                    </label>
+                    <input type="email" id="email" name="email" required
+                        class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-colors"
+                        placeholder="seu@email.com">
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-lock mr-2"></i>Senha
+                    </label>
+                    <div class="relative">
+                        <input type="password" id="password" name="password" required
+                            class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-colors"
+                            placeholder="••••••••">
+                        <button type="button" id="toggle-password" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="login-error" class="hidden bg-red-500 bg-opacity-10 border border-red-500 text-red-500 px-4 py-3 rounded-lg text-sm">
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-800">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Entrar
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="space-y-6 hidden">
+                <div>
+                    <label for="register-name" class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-user mr-2"></i>Nome Completo
+                    </label>
+                    <input type="text" id="register-name" name="name" required
+                        class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-colors"
+                        placeholder="Seu Nome">
+                </div>
+
+                <div>
+                    <label for="register-email" class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-envelope mr-2"></i>Email
+                    </label>
+                    <input type="email" id="register-email" name="email" required
+                        class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-colors"
+                        placeholder="seu@email.com">
+                </div>
+
+                <div>
+                    <label for="register-password" class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-lock mr-2"></i>Senha
+                    </label>
+                    <input type="password" id="register-password" name="password" required
+                        class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-colors"
+                        placeholder="Mínimo 8 caracteres">
+                    <p class="text-xs text-gray-500 mt-1">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        A senha deve ter no mínimo 8 caracteres, com letra maiúscula, minúscula e número.
+                    </p>
+                </div>
+
+                <div id="register-error" class="hidden bg-red-500 bg-opacity-10 border border-red-500 text-red-500 px-4 py-3 rounded-lg text-sm">
+                </div>
+
+                <div id="register-success" class="hidden bg-green-500 bg-opacity-10 border border-green-500 text-green-500 px-4 py-3 rounded-lg text-sm">
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-800">
+                    <i class="fas fa-user-plus mr-2"></i>Criar Conta
+                </button>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <p class="text-center text-gray-500 text-sm mt-8">
+            SOC Training Simulator v1.0.0
+        </p>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Page-specific initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if already logged in
+            if (Auth.isLoggedIn()) {
+                window.location.href = 'dashboard.html';
+                return;
+            }
+
+            // Tab switching
+            const loginTab = document.getElementById('login-tab');
+            const registerTab = document.getElementById('register-tab');
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+
+            loginTab.addEventListener('click', function() {
+                loginTab.classList.add('border-green-500', 'text-green-500');
+                loginTab.classList.remove('border-transparent', 'text-gray-400');
+                registerTab.classList.remove('border-green-500', 'text-green-500');
+                registerTab.classList.add('border-transparent', 'text-gray-400');
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+            });
+
+            registerTab.addEventListener('click', function() {
+                registerTab.classList.add('border-green-500', 'text-green-500');
+                registerTab.classList.remove('border-transparent', 'text-gray-400');
+                loginTab.classList.remove('border-green-500', 'text-green-500');
+                loginTab.classList.add('border-transparent', 'text-gray-400');
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+            });
+
+            // Toggle password visibility
+            const togglePassword = document.getElementById('toggle-password');
+            const passwordInput = document.getElementById('password');
+
+            togglePassword.addEventListener('click', function() {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                this.querySelector('i').classList.toggle('fa-eye');
+                this.querySelector('i').classList.toggle('fa-eye-slash');
+            });
+
+            // Login form submission
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const errorDiv = document.getElementById('login-error');
+                const submitBtn = loginForm.querySelector('button[type="submit"]');
+
+                // Show loading
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Entrando...';
+                errorDiv.classList.add('hidden');
+
+                try {
+                    const response = await Auth.login(email, password);
+                    window.location.href = 'dashboard.html';
+                } catch (error) {
+                    errorDiv.textContent = error.message;
+                    errorDiv.classList.remove('hidden');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Entrar';
+                }
+            });
+
+            // Register form submission
+            registerForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const name = document.getElementById('register-name').value;
+                const email = document.getElementById('register-email').value;
+                const password = document.getElementById('register-password').value;
+                const errorDiv = document.getElementById('register-error');
+                const successDiv = document.getElementById('register-success');
+                const submitBtn = registerForm.querySelector('button[type="submit"]');
+
+                // Show loading
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Criando...';
+                errorDiv.classList.add('hidden');
+                successDiv.classList.add('hidden');
+
+                try {
+                    await API.register(name, email, password);
+                    successDiv.textContent = 'Conta criada com sucesso! Você pode fazer login agora.';
+                    successDiv.classList.remove('hidden');
+                    registerForm.reset();
+
+                    // Switch to login tab after 2 seconds
+                    setTimeout(function() {
+                        loginTab.click();
+                    }, 2000);
+                } catch (error) {
+                    errorDiv.textContent = error.message;
+                    errorDiv.classList.remove('hidden');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Criar Conta';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

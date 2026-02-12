@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC Training Simulator</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome via CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i class="fas fa-shield-alt text-green-500 text-2xl mr-2"></i>
+                        <span class="font-bold text-xl">SOC Training</span>
+                    </div>
+                    <div class="hidden md:ml-6 md:flex md:space-x-4" id="nav-links">
+                        <!-- Navigation links will be added by JavaScript -->
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <div id="user-menu" class="hidden flex items-center space-x-4">
+                        <!-- User menu will be added by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div id="app-content">
+            <!-- Content will be loaded here -->
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 border-t border-gray-700 mt-auto">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-gray-400 text-sm">
+                SOC Training Simulator v1.0.0 - Security Operations Center Training Platform
+            </p>
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin text-green-500 text-4xl mb-4"></i>
+            <p class="text-white">Carregando...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">
+        <!-- Toast notifications will be added here -->
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/app.js"></script>
+</body>
+</html>

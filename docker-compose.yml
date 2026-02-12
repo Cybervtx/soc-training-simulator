@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: soc-training-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: soc_training
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: soc-training-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Flask Application
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: soc-training-backend
+    environment:
+      FLASK_APP: backend/app.py
+      FLASK_ENV: development
+      SECRET_KEY: your-secret-key-change-in-production
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/soc_training
+      ABUSEIPDB_API_KEY: ${ABUSEIPDB_API_KEY}
+      ABUSEIPDB_BASE_URL: https://api.abuseipdb.com/api/v2
+      CACHE_TTL: 86400
+      JWT_SECRET_KEY: your-jwt-secret-key-change-in-production
+      JWT_ACCESS_TOKEN_EXPIRES_HOURS: 24
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "
+        while ! pg_isready -h postgres -U postgres; do sleep 1; done;
+        flask run --host 0.0.0.0 --port 5000
+      "
+
+  # Frontend (development server)
+  frontend:
+    image: node:20-alpine
+    container_name: soc-training-frontend
+    working_dir: /app
+    environment:
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
